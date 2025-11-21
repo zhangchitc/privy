@@ -1,0 +1,19 @@
+{
+  "name": "privy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "create-wallet": "node createAgenticWallet.js",
+    "create-wallet:help": "node createAgenticWallet.js --help",
+    "send-transaction": "node sendTransaction.js",
+    "send-transaction:help": "node sendTransaction.js --help"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@privy-io/node": "^0.6.0",
+    "dotenv": "^17.2.3"
+  }
+}
