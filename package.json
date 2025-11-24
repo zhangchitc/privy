@@ -11,7 +11,11 @@
     "register-orderly": "node registerOrderlyAccount.js",
     "register-orderly:help": "node registerOrderlyAccount.js --help",
     "add-orderly-key": "node addOrderlyKey.js",
-    "add-orderly-key:help": "node addOrderlyKey.js --help"
+    "add-orderly-key:help": "node addOrderlyKey.js --help",
+    "deposit-usdc": "node depositUSDC.js",
+    "deposit-usdc:help": "node depositUSDC.js --help",
+    "withdraw-usdc": "node withdrawUSDC.js",
+    "withdraw-usdc:help": "node withdrawUSDC.js --help"
   },
   "author": "",
   "license": "ISC",
@@ -20,6 +24,7 @@
     "@noble/ed25519": "^1.7.3",
     "@privy-io/node": "^0.6.0",
     "bs58": "^5.0.0",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "ethers": "^6.15.0"
   }
 }

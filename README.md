@@ -32,6 +32,8 @@ A backend script to create Agentic wallets using Privy's API.
    ORDERLY_PRIVATE_KEY=...
    ```
 
+   **Note:** The Orderly account ID is automatically derived from your wallet address and broker ID, so you don't need to set it manually.
+
 3. **Get your credentials from Privy Dashboard:**
    - **App ID & App Secret**: Found in your Privy Dashboard under App Settings
    - **Authorization ID & Secret**:
@@ -363,6 +365,240 @@ Response: {
    Orderly Private Key: 0123456789abcdef...
 ```
 
+## Deposit USDC to Orderly
+
+Deposit USDC from your Privy agentic wallet to Orderly Network. The script follows the [Orderly deposit flow](https://orderly.network/docs/build-on-omnichain/user-flows/withdrawal-deposit):
+
+```bash
+npm run deposit-usdc -- --wallet-id <wallet_id> --amount <amount>
+```
+
+**Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--amount <amount>`: Amount of USDC to deposit (required, e.g., "100")
+- `--chain-id <id>`: Chain ID (optional, default: 80001 = Polygon Mumbai)
+
+**Examples:**
+
+```bash
+# Deposit 100 USDC on Polygon Mumbai
+npm run deposit-usdc -- --wallet-id wal_xxx --amount 100
+
+# Deposit with specific chain
+npm run deposit-usdc -- --wallet-id wal_xxx --amount 50 --chain-id 421614
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Checks USDC balance to ensure sufficient funds
+3. Approves USDC transfer to Orderly Vault (if needed)
+4. Calculates deposit fee using the Vault contract
+5. Generates Orderly account ID from wallet address and broker ID
+6. Prepares deposit data with account ID, broker hash, token hash, and amount
+7. Calls the deposit function on Orderly Vault contract using Privy signing
+8. Waits for transaction confirmation
+
+**Supported Chains:**
+
+- Polygon Mumbai: 80001 (testnet, default)
+- Arbitrum Sepolia: 421614 (testnet)
+- Ethereum Sepolia: 11155111 (testnet)
+- Base Sepolia: 84532 (testnet)
+- And other chains supported by Orderly (check their documentation)
+
+**Important Notes:**
+
+- Make sure your wallet has sufficient USDC balance before depositing
+- The script automatically approves USDC transfer if needed
+- Deposit fee (in native token, e.g., MATIC, ETH) will be included in the transaction
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- Make sure your wallet has native token (MATIC, ETH, etc.) to pay for gas and deposit fee
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Preparing USDC deposit to Orderly...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Amount: 100 USDC
+   Chain ID: 80001 (0x13881)
+   Broker ID: woofi_pro
+   USDC Address: 0x41e94eb019c0762f9bfcf9fb1f3f082b1e1e2079
+   Orderly Vault: 0x816f722424b49cf1275cc86da9840fbd5a6167e9
+   USDC decimals: 6
+   Amount in smallest unit: 100000000
+   Current USDC balance: 150.5
+   Current allowance: 0
+
+Approving USDC transfer to Orderly Vault...
+   Approval transaction hash: 0x1234567890abcdef...
+   Waiting for approval confirmation...
+   Approval confirmed in block: 12345
+   Allowance verified
+
+Deposit data prepared:
+   Account ID: 0xabc123def456...
+   Broker Hash: 0x789def...
+   Token Hash: 0x456abc...
+   Token Amount: 100000000
+
+Calculating deposit fee...
+   Deposit fee: 0.001 ETH
+
+Depositing 100 USDC to Orderly Vault...
+   Transaction hash: 0x9876543210fedcba...
+   Waiting for transaction confirmation...
+   Transaction confirmed in block: 12346
+
+✅ USDC deposit successful!
+
+📝 Deposit Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Transaction Hash: 0x9876543210fedcba...
+   Block Number: 12346
+   Amount: 100 USDC
+   Vault Address: 0x816f722424b49cf1275cc86da9840fbd5a6167e9
+   Orderly Account ID: 0xabc123def456...
+```
+
+## Withdraw USDC from Orderly
+
+Withdraw USDC from your Orderly account to your Privy agentic wallet. The script follows the [Orderly withdrawal flow](https://orderly.network/docs/build-on-omnichain/user-flows/withdrawal-deposit):
+
+```bash
+npm run withdraw-usdc -- --wallet-id <wallet_id> --amount <amount>
+```
+
+**Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--amount <amount>`: Amount of USDC to withdraw (required, e.g., "100", minimum: 1.001)
+- `--token <token>`: Token symbol to withdraw (optional, default: "USDC")
+- `--chain-id <id>`: Chain ID (optional, default: 80001 = Polygon Mumbai)
+
+**Examples:**
+
+```bash
+# Withdraw 100 USDC on Polygon Mumbai
+npm run withdraw-usdc -- --wallet-id wal_xxx --amount 100
+
+# Withdraw with specific chain
+npm run withdraw-usdc -- --wallet-id wal_xxx --amount 50 --chain-id 421614
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Derives Orderly account ID from wallet address and broker ID using the formula: `keccak256(abi.encode(address, keccak256(abi.encodePacked(brokerId))))`
+3. Gets withdrawal nonce from Orderly API (`/v1/withdraw_nonce`) using Orderly authentication
+4. Converts withdrawal amount to smallest unit based on token decimals
+5. Creates EIP-712 typed data message with:
+   - `brokerId`: The broker ID (default: "woofi_pro")
+   - `chainId`: The chain ID for withdrawal
+   - `receiver`: Your wallet address
+   - `token`: Token symbol (e.g., "USDC")
+   - `amount`: Amount in smallest unit (uint256)
+   - `withdrawNonce`: Nonce from step 3 (uint64)
+   - `timestamp`: Current timestamp in milliseconds (uint64)
+6. Signs the EIP-712 message using Privy's `signTypedData` with authorization context
+7. Creates withdrawal request with Orderly API (`/v1/withdraw_request`) using Orderly authentication
+8. Returns withdrawal confirmation
+
+**Supported Chains:**
+
+- Polygon Mumbai: 80001 (testnet, default)
+- Arbitrum Sepolia: 421614 (testnet)
+- Ethereum Sepolia: 11155111 (testnet)
+- Base Sepolia: 84532 (testnet)
+- And other chains supported by Orderly (check their documentation)
+
+**Important Notes:**
+
+- Make sure your Orderly account has sufficient balance before withdrawing
+- Minimum withdrawal amount is 1.001 tokens
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- Make sure you have added an Orderly key (use `add-orderly-key`)
+- The withdrawal will be processed by Orderly Network asynchronously
+- Check your wallet on the target chain after processing completes
+- Requires `ORDERLY_KEY` and `ORDERLY_PRIVATE_KEY` for API authentication
+- Orderly account ID is automatically derived from wallet address and broker ID
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Preparing withdrawal from Orderly...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Amount: 100 USDC
+   Chain ID: 80001 (0x13881)
+   Broker ID: woofi_pro
+   Account ID: 0xabc123def456...
+
+Step 1: Fetching withdrawal nonce...
+   Withdrawal nonce: 194528949540
+
+Step 2: Converting amount...
+   Token: USDC, Decimals: 6
+   Amount: 100 USDC = 100000000 (smallest unit)
+
+Step 3: Creating EIP-712 message...
+Message: {
+  "brokerId": "woofi_pro",
+  "chainId": 80001,
+  "receiver": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "token": "USDC",
+  "amount": "100000000",
+  "withdrawNonce": "194528949540",
+  "timestamp": "1685973017064"
+}
+
+Step 4: Signing EIP-712 message...
+✅ Signature generated: 0x1234567890abcdef...
+
+Step 5: Creating withdrawal request...
+Request body: {
+  "message": {
+    "brokerId": "woofi_pro",
+    "chainId": 80001,
+    "receiver": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    "token": "USDC",
+    "amount": "100000000",
+    "withdrawNonce": "194528949540",
+    "timestamp": "1685973017064"
+  },
+  "signature": "0x1234567890abcdef...",
+  "userAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "verifyingContract": "0x6F7a338F2aA472838dEFD3283eB360d4Dff5D203"
+}
+
+✅ Withdrawal request successful!
+Response: {
+  "success": true,
+  "data": {
+    "withdraw_id": "0x9876543210fedcba..."
+  }
+}
+
+📝 Withdrawal Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Amount: 100 USDC
+   Target Chain ID: 80001
+   Withdrawal Nonce: 194528949540
+
+Note: The withdrawal will be processed by Orderly Network.
+Check your wallet on the target chain after processing completes.
+```
+
 ## Script Details
 
 ### createAgenticWallet.js
@@ -400,6 +636,28 @@ Response: {
 - Automatically saves generated keys to `.env` file
 - Supports custom chain IDs
 - Follows Orderly's wallet authentication flow
+
+### depositUSDC.js
+
+- Deposits USDC from Privy agentic wallets to Orderly Network
+- Uses Privy's sendTransaction for contract interactions
+- Automatically approves USDC transfer if needed
+- Calculates and includes deposit fee
+- Generates Orderly account ID from wallet address and broker ID
+- Validates balance before depositing
+- Supports multiple chains with pre-configured USDC and Vault addresses
+- Uses authorization context for secure transaction signing
+
+### withdrawUSDC.js
+
+- Withdraws USDC from Orderly account to Privy agentic wallets
+- Uses Privy's signTypedData for EIP-712 message signing
+- Uses Orderly API authentication for authenticated requests
+- Gets withdrawal nonce from Orderly API
+- Creates and signs EIP-712 typed data messages using Privy
+- Uses authorization context for secure signing
+- Supports multiple chains and tokens
+- Follows Orderly's withdrawal flow
 
 ## Error Handling
 
