@@ -25,6 +25,13 @@ A backend script to create Agentic wallets using Privy's API.
    PRIVY_AUTHORIZATION_SECRET=your_authorization_secret_here
    ```
 
+   **Note:** After running `add-orderly-key`, the following will be automatically added to your `.env` file:
+
+   ```env
+   ORDERLY_KEY=ed25519:...
+   ORDERLY_PRIVATE_KEY=...
+   ```
+
 3. **Get your credentials from Privy Dashboard:**
    - **App ID & App Secret**: Found in your Privy Dashboard under App Settings
    - **Authorization ID & Secret**:
@@ -180,20 +187,15 @@ npm run register-orderly -- --wallet-id <wallet_id>
 - `--wallet-id <id>`: Wallet ID to use for registration (required)
 - `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
 - `--chain-id <id>`: Chain ID (optional, default: 421614 = Arbitrum Sepolia)
-- `--api-url <url>`: Orderly API URL (optional, default: https://testnet-api.orderly.org)
-- `--broker-id <id>`: Broker ID (optional, default: woofi_dex)
 
 **Examples:**
 
 ```bash
-# Register account on Orderly testnet
+# Register account on Orderly
 npm run register-orderly -- --wallet-id wal_xxx
 
-# Register with specific chain and broker
-npm run register-orderly -- --wallet-id wal_xxx --chain-id 421614 --broker-id woofi_dex
-
-# Register on mainnet
-npm run register-orderly -- --wallet-id wal_xxx --api-url https://api.orderly.org --chain-id 42161
+# Register with specific chain
+npm run register-orderly -- --wallet-id wal_xxx --chain-id 421614
 ```
 
 **How it works:**
@@ -201,7 +203,7 @@ npm run register-orderly -- --wallet-id wal_xxx --api-url https://api.orderly.or
 1. Fetches your wallet address from Privy (if not provided)
 2. Gets a registration nonce from Orderly API (`/v1/registration_nonce`)
 3. Creates an EIP-712 typed data message with:
-   - `brokerId`: The builder/broker ID (default: "woofi_dex")
+   - `brokerId`: The builder/broker ID (default: "woofi_pro")
    - `chainId`: The chain ID for registration
    - `timestamp`: Current timestamp in milliseconds
    - `registrationNonce`: Nonce from step 2
@@ -224,15 +226,15 @@ Preparing Orderly account registration...
    Wallet ID: wal_abc123xyz
    Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
    Chain ID: 421614 (0x66eee)
-   Broker ID: woofi_dex
-   Orderly API: https://testnet-api.orderly.org
+   Broker ID: woofi_pro
+   Orderly API: https://api.orderly.org
 
 Step 1: Getting registration nonce...
    Registration Nonce: 194528949540
 
 Step 2: Signing EIP-712 message...
 Register message: {
-  "brokerId": "woofi_dex",
+  "brokerId": "woofi_pro",
   "chainId": 421614,
   "timestamp": 1685973017064,
   "registrationNonce": "194528949540"
@@ -243,7 +245,7 @@ Register message: {
 Step 3: Registering account with Orderly...
 Registration payload: {
   "message": {
-    "brokerId": "woofi_dex",
+    "brokerId": "woofi_pro",
     "chainId": 421614,
     "timestamp": 1685973017064,
     "registrationNonce": "194528949540"
@@ -265,6 +267,100 @@ Registration response: {
 📝 Registration Summary:
    Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
    Orderly Account ID: 0xabc123def456...
+```
+
+## Add Orderly Key
+
+Add an Orderly authentication key for your Privy wallet. This generates an ed25519 key pair for Orderly API authentication. The script follows the [Orderly wallet authentication flow](https://orderly.network/docs/build-on-omnichain/user-flows/wallet-authentication):
+
+```bash
+npm run add-orderly-key -- --wallet-id <wallet_id>
+```
+
+**Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--chain-id <id>`: Chain ID (optional, default: 80001 = Polygon Mumbai)
+
+**Examples:**
+
+```bash
+# Add Orderly Key for a Privy wallet
+npm run add-orderly-key -- --wallet-id wal_xxx
+
+# Add Orderly Key with specific chain
+npm run add-orderly-key -- --wallet-id wal_xxx --chain-id 80001
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Generates an ed25519 key pair for Orderly authentication
+3. Creates an EIP-712 typed data message with:
+   - `brokerId`: The broker ID (default: "woofi_pro")
+   - `chainId`: The chain ID
+   - `orderlyKey`: The generated ed25519 public key
+   - `scope`: Permission scope (default: "read,trading")
+   - `timestamp`: Current timestamp in milliseconds
+   - `expiration`: Expiration timestamp (default: 365 days)
+4. Signs the EIP-712 message using your authorization secret
+5. Adds the Orderly Key via Orderly API (`/v1/orderly_key`)
+6. Saves the Orderly Key and Private Key to your `.env` file
+
+**Important Notes:**
+
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- The generated keys are automatically saved to your `.env` file
+- The Orderly Key can be used for API authentication with Orderly
+- Keep your `ORDERLY_PRIVATE_KEY` secure - it's used to sign API requests
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Adding Orderly Key for Privy wallet...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Chain ID: 80001 (0x13881)
+   Broker ID: woofi_pro
+
+Generating ed25519 key pair...
+   Generated Orderly Key: ed25519:AbCdEf123456...
+   Generated Orderly Private Key: 0123456789abcdef...
+
+Signing EIP-712 message...
+Message: {
+  "brokerId": "woofi_pro",
+  "chainId": 80001,
+  "orderlyKey": "ed25519:AbCdEf123456...",
+  "scope": "read,trading",
+  "timestamp": 1685973017064,
+  "expiration": 1717509017064
+}
+
+✅ Signature generated: 0x1234567890abcdef...
+
+Adding Orderly Key to Orderly...
+
+✅ Orderly Key added successfully!
+Response: {
+  "success": true,
+  "data": {
+    "orderly_key": "ed25519:AbCdEf123456..."
+  }
+}
+
+✅ Saved to .env file:
+   ORDERLY_KEY=ed25519:AbCdEf123456...
+   ORDERLY_PRIVATE_KEY=0123456789abcdef...
+
+📝 Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Orderly Key: ed25519:AbCdEf123456...
+   Orderly Private Key: 0123456789abcdef...
 ```
 
 ## Script Details
@@ -294,6 +390,16 @@ Registration response: {
 - Supports multiple chains (Arbitrum Sepolia, Arbitrum One, etc.)
 - Automatically fetches wallet address if not provided
 - Returns Orderly account ID upon successful registration
+
+### addOrderlyKey.js
+
+- Adds Orderly authentication keys for Privy wallets
+- Generates ed25519 key pairs for Orderly API authentication
+- Creates and signs EIP-712 typed data messages using Privy
+- Uses authorization context for secure signing
+- Automatically saves generated keys to `.env` file
+- Supports custom chain IDs
+- Follows Orderly's wallet authentication flow
 
 ## Error Handling
 
@@ -325,4 +431,5 @@ Get free testnet tokens for testing:
 - [Privy Dashboard](https://dashboard.privy.io)
 - [Orderly Network Documentation](https://orderly.network/docs)
 - [Orderly Account Registration Flow](https://orderly.network/docs/build-on-omnichain/user-flows/accounts)
+- [Orderly Wallet Authentication Flow](https://orderly.network/docs/build-on-omnichain/user-flows/wallet-authentication)
 - [Ethereum Testnets Guide](https://ethereum.org/en/developers/docs/networks/#ethereum-testnets)

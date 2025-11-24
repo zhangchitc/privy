@@ -9,13 +9,17 @@
     "send-transaction": "node sendTransaction.js",
     "send-transaction:help": "node sendTransaction.js --help",
     "register-orderly": "node registerOrderlyAccount.js",
-    "register-orderly:help": "node registerOrderlyAccount.js --help"
+    "register-orderly:help": "node registerOrderlyAccount.js --help",
+    "add-orderly-key": "node addOrderlyKey.js",
+    "add-orderly-key:help": "node addOrderlyKey.js --help"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@noble/ed25519": "^1.7.3",
     "@privy-io/node": "^0.6.0",
+    "bs58": "^5.0.0",
     "dotenv": "^17.2.3"
   }
 }
