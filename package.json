@@ -7,7 +7,9 @@
     "create-wallet": "node createAgenticWallet.js",
     "create-wallet:help": "node createAgenticWallet.js --help",
     "send-transaction": "node sendTransaction.js",
-    "send-transaction:help": "node sendTransaction.js --help"
+    "send-transaction:help": "node sendTransaction.js --help",
+    "register-orderly": "node registerOrderlyAccount.js",
+    "register-orderly:help": "node registerOrderlyAccount.js --help"
   },
   "author": "",
   "license": "ISC",
