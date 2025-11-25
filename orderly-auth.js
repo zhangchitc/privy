@@ -19,6 +19,19 @@ function hexToPrivateKey(hexKey) {
 }
 
 /**
+ * Get Content-Type header based on HTTP method
+ * @param {string} method - HTTP method
+ * @returns {string} - Content-Type value
+ */
+function getContentType(method) {
+  const upperMethod = method.toUpperCase();
+  if (upperMethod === "GET" || upperMethod === "DELETE") {
+    return "application/x-www-form-urlencoded";
+  }
+  return "application/json";
+}
+
+/**
  * Create authenticated request configuration for Orderly API
  * Based on Orderly documentation: https://orderly.network/docs/build-on-omnichain/evm-api/api-authentication
  *
@@ -54,7 +67,7 @@ async function createAuthenticatedRequest(
 
   // Create headers
   const headers = {
-    "Content-Type": "application/json",
+    "Content-Type": getContentType(method),
     "orderly-timestamp": timestamp,
     "orderly-account-id": accountId,
     "orderly-key": orderlyKey,

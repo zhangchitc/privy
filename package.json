@@ -17,7 +17,13 @@
     "withdraw-usdc": "node withdrawUSDC.js",
     "withdraw-usdc:help": "node withdrawUSDC.js --help",
     "get-holding": "node getHolding.js",
-    "get-holding:help": "node getHolding.js --help"
+    "get-holding:help": "node getHolding.js --help",
+    "create-order": "node createOrder.js",
+    "create-order:help": "node createOrder.js --help",
+    "get-orders": "node getOrders.js",
+    "get-orders:help": "node getOrders.js --help",
+    "cancel-order": "node cancelOrder.js",
+    "cancel-order:help": "node cancelOrder.js --help"
   },
   "author": "",
   "license": "ISC",

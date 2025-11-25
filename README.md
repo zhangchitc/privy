@@ -689,6 +689,355 @@ Total Holdings: 432,485.071904 (across all tokens)
    Timestamp: 12/19/2023, 10:33:23 AM
 ```
 
+## Create Order
+
+Create trading orders on Orderly Network using your Privy agentic wallet. The script follows the [Orderly create order API](https://orderly.network/docs/build-on-omnichain/evm-api/restful-api/private/create-order):
+
+```bash
+npm run create-order -- --wallet-id <wallet_id> --symbol <symbol> --order-type <type> --side <side>
+```
+
+**Required Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+- `--symbol <symbol>`: Trading symbol (e.g., "PERP_ETH_USDC") (required)
+- `--order-type <type>`: Order type: LIMIT, MARKET, IOC, FOK, POST_ONLY, ASK, BID (required)
+- `--side <side>`: Order side: BUY or SELL (required)
+
+**Optional Options:**
+
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--order-price <price>`: Order price (required for LIMIT/IOC/FOK/POST_ONLY)
+- `--order-quantity <qty>`: Order quantity in base currency
+- `--order-amount <amount>`: Order amount in quote currency (for MARKET/BID/ASK BUY orders)
+- `--visible-quantity <qty>`: Visible quantity on orderbook (default: order_quantity)
+- `--reduce-only`: Reduce only flag (default: false)
+- `--slippage <slippage>`: Slippage tolerance for MARKET orders
+- `--client-order-id <id>`: Custom client order ID (36 chars max, unique)
+- `--order-tag <tag>`: Order tag
+- `--level <level>`: Level for BID/ASK orders (0-4)
+- `--post-only-adjust`: Price adjustment for POST_ONLY orders
+
+**Examples:**
+
+```bash
+# LIMIT BUY order
+npm run create-order -- --wallet-id wal_xxx --symbol "PERP_ETH_USDC" --order-type LIMIT --side BUY --order-price 2000 --order-quantity 0.1
+
+# MARKET BUY order (using orderAmount)
+npm run create-order -- --wallet-id wal_xxx --symbol "PERP_ETH_USDC" --order-type MARKET --side BUY --order-amount 100
+
+# LIMIT SELL order
+npm run create-order -- --wallet-id wal_xxx --symbol "PERP_ETH_USDC" --order-type LIMIT --side SELL --order-price 2100 --order-quantity 0.05
+
+# LIMIT BUY order with reduce-only
+npm run create-order -- --wallet-id wal_xxx --symbol "PERP_ETH_USDC" --order-type LIMIT --side BUY --order-price 2000 --order-quantity 0.1 --reduce-only
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Derives Orderly account ID from wallet address and broker ID using the formula: `keccak256(abi.encode(address, keccak256(abi.encodePacked(brokerId))))`
+3. Validates order parameters (order type, side, price requirements, etc.)
+4. Builds order request body with all specified parameters
+5. Creates authenticated request to Orderly API using Orderly key authentication
+6. Calls Orderly API (`POST /v1/order`) to create the order
+7. Returns order creation confirmation with order ID
+
+**Order Types:**
+
+- **LIMIT**: Limit order with specified price (requires `--order-price`)
+- **MARKET**: Market order executed at current market price
+- **IOC**: Immediate or Cancel order (requires `--order-price`)
+- **FOK**: Fill or Kill order (requires `--order-price`)
+- **POST_ONLY**: Post-only order (requires `--order-price`)
+- **ASK**: Ask order for market making
+- **BID**: Bid order for market making
+
+**Important Notes:**
+
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- Make sure you have added an Orderly key (use `add-orderly-key`)
+- Requires `ORDERLY_KEY` and `ORDERLY_PRIVATE_KEY` for API authentication
+- Orderly account ID is automatically derived from wallet address and broker ID
+- For LIMIT/IOC/FOK/POST_ONLY orders, `--order-price` is required
+- For MARKET/BID/ASK BUY orders, use `--order-amount` (not `--order-quantity`)
+- For MARKET/BID/ASK SELL orders, use `--order-quantity` (not `--order-amount`)
+- Either `--order-quantity` or `--order-amount` must be provided
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Preparing order creation...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Symbol: PERP_ETH_USDC
+   Order Type: LIMIT
+   Side: BUY
+
+Order parameters: {
+  "symbol": "PERP_ETH_USDC",
+  "order_type": "LIMIT",
+  "side": "BUY",
+  "order_price": 2000,
+  "order_quantity": 0.1
+}
+
+✅ Order created successfully!
+Response: {
+  "success": true,
+  "data": {
+    "order_id": 123456789,
+    "client_order_id": "custom-id-123",
+    "symbol": "PERP_ETH_USDC",
+    "order_type": "LIMIT",
+    "side": "BUY",
+    "order_price": 2000,
+    "order_quantity": 0.1,
+    "status": "NEW"
+  }
+}
+
+📝 Order Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Order ID: 123456789
+   Client Order ID: custom-id-123
+```
+
+## Get Orders
+
+Get orders from your Orderly account with customizable filters. The script follows the [Orderly get orders API](https://orderly.network/docs/build-on-omnichain/evm-api/restful-api/private/get-orders):
+
+```bash
+npm run get-orders -- --wallet-id <wallet_id>
+```
+
+**Required Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+
+**Optional Options:**
+
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--symbol <symbol>`: Trading symbol filter (e.g., "PERP_ETH_USDC")
+- `--side <side>`: Order side filter: BUY or SELL
+- `--order-type <type>`: Order type filter: LIMIT or MARKET
+- `--status <status>`: Order status filter: NEW, CANCELLED, PARTIAL_FILLED, FILLED, REJECTED, INCOMPLETE, COMPLETED
+- `--order-tag <tag>`: Order tag filter
+- `--start-time <timestamp>`: Start time range (13-digit timestamp in milliseconds)
+- `--end-time <timestamp>`: End time range (13-digit timestamp in milliseconds)
+- `--page <page>`: Page number (starts from 1, default: 1)
+- `--size <size>`: Page size (max: 500, default: 25)
+- `--sort-by <sort>`: Sort by: CREATED_TIME_DESC, CREATED_TIME_ASC, UPDATED_TIME_DESC, UPDATED_TIME_ASC
+
+**Status Values:**
+
+- `NEW`: New orders
+- `CANCELLED`: Cancelled orders
+- `PARTIAL_FILLED`: Partially filled orders
+- `FILLED`: Fully filled orders
+- `REJECTED`: Rejected orders
+- `INCOMPLETE`: NEW + PARTIAL_FILLED (bundled status)
+- `COMPLETED`: CANCELLED + FILLED (bundled status)
+
+**Examples:**
+
+```bash
+# Get all orders for a Privy wallet
+npm run get-orders -- --wallet-id wal_xxx
+
+# Get orders for a specific symbol
+npm run get-orders -- --wallet-id wal_xxx --symbol "PERP_ETH_USDC"
+
+# Get only BUY orders
+npm run get-orders -- --wallet-id wal_xxx --side BUY
+
+# Get incomplete orders (NEW + PARTIAL_FILLED)
+npm run get-orders -- --wallet-id wal_xxx --status INCOMPLETE
+
+# Get orders with pagination
+npm run get-orders -- --wallet-id wal_xxx --page 1 --size 50
+
+# Get orders sorted by creation time (descending)
+npm run get-orders -- --wallet-id wal_xxx --sort-by CREATED_TIME_DESC
+
+# Get orders within a time range
+npm run get-orders -- --wallet-id wal_xxx --start-time 1653563963000 --end-time 1653564213000
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Derives Orderly account ID from wallet address and broker ID using the formula: `keccak256(abi.encode(address, keccak256(abi.encodePacked(brokerId))))`
+3. Builds query parameters from provided filters
+4. Creates authenticated request to Orderly API using Orderly key authentication
+5. Calls Orderly API (`GET /v1/orders`) to retrieve orders
+6. Displays formatted orders information including:
+   - Order ID, symbol, side, type, status
+   - Price, quantity, executed quantity
+   - Fees, realized PnL
+   - Creation and update timestamps
+   - Pagination metadata
+
+**Important Notes:**
+
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- Make sure you have added an Orderly key (use `add-orderly-key`)
+- Requires `ORDERLY_KEY` and `ORDERLY_PRIVATE_KEY` for API authentication
+- Orderly account ID is automatically derived from wallet address and broker ID
+- The API has a rate limit of 10 requests per 1 second
+- Maximum page size is 500
+- Default sorting: descending by created_time (or updated_time if time filters are used)
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Fetching orders from Orderly...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Filters: symbol=PERP_ETH_USDC&status=INCOMPLETE
+
+✅ Orders retrieved successfully!
+
+📋 Orders:
+====================================================================================================
+
+Total Orders: 9
+Page: 1 of 1
+Records per page: 25
+
+1. Order #78151:
+   Symbol: PERP_WOO_USDC
+   Side: BUY
+   Type: LIMIT
+   Status: FILLED
+   Price: 0.67772
+   Quantity: 20
+   Amount: 10
+   Executed Quantity: 20
+   Total Executed Quantity: 20
+   Visible Quantity: 1
+   Average Executed Price: 0.67772
+   Total Fee: 0.5 WOO
+   Client Order ID: 1
+   Realized PnL: 0
+   Created: 5/25/2022, 10:39:23 AM
+   Updated: 5/25/2022, 10:43:33 AM
+
+2. Order #78152:
+   Symbol: PERP_ETH_USDC
+   Side: SELL
+   Type: LIMIT
+   Status: NEW
+   Price: 2100
+   Quantity: 0.5
+   Executed Quantity: 0
+   Total Executed Quantity: 0
+   Visible Quantity: 0.5
+   Average Executed Price: 0
+   Total Fee: 0 USDC
+   Realized PnL: 0
+   Created: 5/25/2022, 11:00:00 AM
+   Updated: 5/25/2022, 11:00:00 AM
+
+====================================================================================================
+
+📝 Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Number of Orders: 2
+   Total Orders: 9
+   Timestamp: 12/19/2023, 10:33:23 AM
+```
+
+## Cancel Order
+
+Cancel an order on Orderly Network by order ID. The script follows the [Orderly cancel order API](https://orderly.network/docs/build-on-omnichain/evm-api/restful-api/private/cancel-order):
+
+```bash
+npm run cancel-order -- --wallet-id <wallet_id> --order-id <order_id> --symbol <symbol>
+```
+
+**Required Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+- `--order-id <id>`: Order ID to cancel (required)
+- `--symbol <symbol>`: Trading symbol (e.g., "PERP_ETH_USDC") (required)
+
+**Optional Options:**
+
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--help, -h`: Show this help message
+
+**Examples:**
+
+```bash
+# Cancel order by order ID
+npm run cancel-order -- --wallet-id wal_xxx --order-id 12345 --symbol "PERP_ETH_USDC"
+
+# Cancel order with wallet address provided
+npm run cancel-order -- --wallet-id wal_xxx --wallet-address 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb --order-id 12345 --symbol "PERP_ETH_USDC"
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Derives Orderly account ID from wallet address and broker ID using the formula: `keccak256(abi.encode(address, keccak256(abi.encodePacked(brokerId))))`
+3. Validates required parameters (order ID and symbol)
+4. Builds query parameters with order ID and symbol
+5. Creates authenticated request to Orderly API using Orderly key authentication
+6. Calls Orderly API (`DELETE /v1/order`) to cancel the order
+7. Returns cancellation confirmation with order status
+
+**Important Notes:**
+
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- Make sure you have added an Orderly key (use `add-orderly-key`)
+- Requires `ORDERLY_KEY` and `ORDERLY_PRIVATE_KEY` for API authentication
+- Orderly account ID is automatically derived from wallet address and broker ID
+- Both order ID and symbol are required to cancel an order
+- Only orders that are in NEW or PARTIAL_FILLED status can be cancelled
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Preparing order cancellation...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Order ID: 12345
+   Symbol: PERP_ETH_USDC
+
+✅ Order cancelled successfully!
+Response: {
+  "success": true,
+  "data": {
+    "status": "CANCELLED",
+    "order_id": 12345,
+    "symbol": "PERP_ETH_USDC"
+  }
+}
+
+📝 Cancellation Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Order ID: 12345
+   Symbol: PERP_ETH_USDC
+   Status: CANCELLED
+```
+
 ## Script Details
 
 ### createAgenticWallet.js
@@ -757,6 +1106,38 @@ Total Holdings: 432,485.071904 (across all tokens)
 - Supports optional `--all` flag to include tokens with zero balance
 - Formats and displays holdings information in a readable format
 - Shows total holding, frozen amount, available balance, and pending short positions
+
+### createOrder.js
+
+- Creates trading orders on Orderly Network using Privy agentic wallets
+- Uses Orderly API authentication for authenticated requests
+- Derives Orderly account ID from wallet address and broker ID
+- Supports all order types: LIMIT, MARKET, IOC, FOK, POST_ONLY, ASK, BID
+- Validates order parameters and requirements
+- Supports optional parameters like reduce-only, slippage, client order ID, etc.
+- Follows Orderly's order creation API
+
+### getOrders.js
+
+- Gets orders from Orderly account with customizable filters
+- Uses Orderly API authentication for authenticated requests
+- Derives Orderly account ID from wallet address and broker ID
+- Supports filtering by symbol, side, order type, status, order tag, and time range
+- Supports pagination with configurable page size (max: 500)
+- Supports sorting by creation time or update time (ascending/descending)
+- Formats and displays orders information in a readable format
+- Shows order details including execution status, fees, and PnL
+- Follows Orderly's get orders API
+
+### cancelOrder.js
+
+- Cancels orders on Orderly Network by order ID
+- Uses Orderly API authentication for authenticated requests
+- Derives Orderly account ID from wallet address and broker ID
+- Validates required parameters (order ID and symbol)
+- Uses DELETE method to cancel orders via Orderly API
+- Returns cancellation confirmation with order status
+- Follows Orderly's cancel order API
 
 ## Error Handling
 
