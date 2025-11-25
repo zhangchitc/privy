@@ -599,6 +599,96 @@ Note: The withdrawal will be processed by Orderly Network.
 Check your wallet on the target chain after processing completes.
 ```
 
+## Get Current Holding
+
+Get the current summary of token holdings from your Orderly account. The script follows the [Orderly get current holding API](https://orderly.network/docs/build-on-omnichain/evm-api/restful-api/private/get-current-holding):
+
+```bash
+npm run get-holding -- --wallet-id <wallet_id>
+```
+
+**Options:**
+
+- `--wallet-id <id>`: Privy wallet ID to use (required)
+- `--wallet-address <addr>`: Wallet address (optional, will be fetched if not provided)
+- `--all`: Include all tokens even if balance is empty (optional, default: false)
+
+**Examples:**
+
+```bash
+# Get current holding for a Privy wallet
+npm run get-holding -- --wallet-id wal_xxx
+
+# Get holding with wallet address provided
+npm run get-holding -- --wallet-id wal_xxx --wallet-address 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+# Get all tokens including those with zero balance
+npm run get-holding -- --wallet-id wal_xxx --all
+```
+
+**How it works:**
+
+1. Fetches your wallet address from Privy (if not provided)
+2. Derives Orderly account ID from wallet address and broker ID using the formula: `keccak256(abi.encode(address, keccak256(abi.encodePacked(brokerId))))`
+3. Creates authenticated request to Orderly API using Orderly key authentication
+4. Calls Orderly API (`GET /v1/client/holding`) to retrieve current holdings
+5. Displays formatted holdings information including:
+   - Total holding per token
+   - Frozen amount
+   - Available balance
+   - Pending short positions
+   - Last update timestamp
+
+**Important Notes:**
+
+- Make sure your wallet has been registered with Orderly first (use `register-orderly`)
+- Make sure you have added an Orderly key (use `add-orderly-key`)
+- Requires `ORDERLY_KEY` and `ORDERLY_PRIVATE_KEY` for API authentication
+- Orderly account ID is automatically derived from wallet address and broker ID
+- The API has a rate limit of 10 requests per 1 second
+
+**Sample Output:**
+
+```
+Fetching wallet details...
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+
+Fetching current holding from Orderly...
+   Wallet ID: wal_abc123xyz
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Broker ID: woofi_pro
+   Account ID: 0xabc123def456...
+   Include all tokens: false
+
+✅ Holding retrieved successfully!
+
+📊 Current Holdings:
+================================================================================
+
+1. USDT:
+   Total Holding: 282,485.071904
+   Frozen: 0
+   Available: 282,485.071904
+   Pending Short: -2,000
+   Updated: 1/2/2020, 12:09:09 AM
+
+2. USDC:
+   Total Holding: 150,000
+   Frozen: 0
+   Available: 150,000
+   Pending Short: 0
+   Updated: 1/2/2020, 12:10:00 AM
+
+================================================================================
+Total Holdings: 432,485.071904 (across all tokens)
+
+📝 Summary:
+   Wallet Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+   Account ID: 0xabc123def456...
+   Number of Tokens: 2
+   Timestamp: 12/19/2023, 10:33:23 AM
+```
+
 ## Script Details
 
 ### createAgenticWallet.js
@@ -658,6 +748,15 @@ Check your wallet on the target chain after processing completes.
 - Uses authorization context for secure signing
 - Supports multiple chains and tokens
 - Follows Orderly's withdrawal flow
+
+### getHolding.js
+
+- Gets current token holdings from Orderly account
+- Uses Orderly API authentication for authenticated requests
+- Derives Orderly account ID from wallet address and broker ID
+- Supports optional `--all` flag to include tokens with zero balance
+- Formats and displays holdings information in a readable format
+- Shows total holding, frozen amount, available balance, and pending short positions
 
 ## Error Handling
 
