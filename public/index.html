@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privy Agentic Wallet - Orderly Network Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Privy Agentic Wallet Demo</h1>
+            <p class="subtitle">Orderly Network Integration</p>
+        </header>
+
+        <div class="flow-container">
+            <!-- Step 1: Create Wallet -->
+            <section class="step-card" id="step1">
+                <h2>Step 1: Create Agentic Wallet</h2>
+                <div class="form-group">
+                    <button id="createWalletBtn" class="btn btn-primary">Create Wallet</button>
+                </div>
+                <div id="walletResult" class="result"></div>
+            </section>
+
+            <!-- Step 2: Register Orderly Account -->
+            <section class="step-card" id="step2">
+                <h2>Step 2: Register Orderly Account</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="walletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-group">
+                    <label>Chain ID (optional):</label>
+                    <input type="number" id="registerChainId" placeholder="421614" value="421614" />
+                </div>
+                <div class="form-group">
+                    <button id="registerOrderlyBtn" class="btn btn-primary">Register Account</button>
+                </div>
+                <div id="registerResult" class="result"></div>
+            </section>
+
+            <!-- Step 3: Add Orderly Key -->
+            <section class="step-card" id="step3">
+                <h2>Step 3: Add Orderly Key</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="addKeyWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-group">
+                    <label>Chain ID (optional):</label>
+                    <input type="number" id="addKeyChainId" placeholder="80001" value="80001" />
+                </div>
+                <div class="form-group">
+                    <button id="addKeyBtn" class="btn btn-primary">Add Orderly Key</button>
+                </div>
+                <div id="addKeyResult" class="result"></div>
+            </section>
+
+            <!-- Step 4: Deposit USDC -->
+            <section class="step-card" id="step4">
+                <h2>Step 4: Deposit USDC</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="depositWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-group">
+                    <label>Amount:</label>
+                    <input type="text" id="depositAmount" placeholder="100" />
+                </div>
+                <div class="form-group">
+                    <label>Chain ID (optional):</label>
+                    <input type="number" id="depositChainId" placeholder="80001" value="80001" />
+                </div>
+                <div class="form-group">
+                    <button id="depositBtn" class="btn btn-primary">Deposit USDC</button>
+                </div>
+                <div id="depositResult" class="result"></div>
+            </section>
+
+            <!-- Step 5: Get Holdings -->
+            <section class="step-card" id="step5">
+                <h2>Step 5: Check Holdings</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="holdingWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-group">
+                    <button id="getHoldingBtn" class="btn btn-secondary">Get Holdings</button>
+                </div>
+                <div id="holdingResult" class="result"></div>
+            </section>
+
+            <!-- Step 6: Create Order -->
+            <section class="step-card" id="step6">
+                <h2>Step 6: Create Order</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="orderWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-group">
+                    <label>Symbol:</label>
+                    <input type="text" id="orderSymbol" placeholder="PERP_ETH_USDC" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Order Type:</label>
+                        <select id="orderType">
+                            <option value="LIMIT">LIMIT</option>
+                            <option value="MARKET">MARKET</option>
+                            <option value="IOC">IOC</option>
+                            <option value="FOK">FOK</option>
+                            <option value="POST_ONLY">POST_ONLY</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Side:</label>
+                        <select id="orderSide">
+                            <option value="BUY">BUY</option>
+                            <option value="SELL">SELL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price (for LIMIT orders):</label>
+                        <input type="text" id="orderPrice" placeholder="2000" />
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity:</label>
+                        <input type="text" id="orderQuantity" placeholder="0.1" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button id="createOrderBtn" class="btn btn-primary">Create Order</button>
+                </div>
+                <div id="createOrderResult" class="result"></div>
+            </section>
+
+            <!-- Step 7: Get Orders -->
+            <section class="step-card" id="step7">
+                <h2>Step 7: View Orders</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="getOrdersWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-group">
+                    <label>Status (optional):</label>
+                    <select id="orderStatus">
+                        <option value="">All</option>
+                        <option value="NEW">NEW</option>
+                        <option value="INCOMPLETE">INCOMPLETE</option>
+                        <option value="FILLED">FILLED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="getOrdersBtn" class="btn btn-secondary">Get Orders</button>
+                </div>
+                <div id="getOrdersResult" class="result"></div>
+            </section>
+
+            <!-- Step 8: Cancel Order -->
+            <section class="step-card" id="step8">
+                <h2>Step 8: Cancel Order</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="cancelWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Order ID:</label>
+                        <input type="number" id="cancelOrderId" placeholder="12345" />
+                    </div>
+                    <div class="form-group">
+                        <label>Symbol:</label>
+                        <input type="text" id="cancelSymbol" placeholder="PERP_ETH_USDC" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button id="cancelOrderBtn" class="btn btn-danger">Cancel Order</button>
+                </div>
+                <div id="cancelOrderResult" class="result"></div>
+            </section>
+
+            <!-- Step 9: Withdraw USDC -->
+            <section class="step-card" id="step9">
+                <h2>Step 9: Withdraw USDC</h2>
+                <div class="form-group">
+                    <label>Wallet ID:</label>
+                    <input type="text" id="withdrawWalletId" placeholder="wal_xxx" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount:</label>
+                        <input type="text" id="withdrawAmount" placeholder="100" />
+                    </div>
+                    <div class="form-group">
+                        <label>Token (optional):</label>
+                        <input type="text" id="withdrawToken" placeholder="USDC" value="USDC" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Chain ID (optional):</label>
+                    <input type="number" id="withdrawChainId" placeholder="80001" value="80001" />
+                </div>
+                <div class="form-group">
+                    <button id="withdrawBtn" class="btn btn-danger">Withdraw USDC</button>
+                </div>
+                <div id="withdrawResult" class="result"></div>
+            </section>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

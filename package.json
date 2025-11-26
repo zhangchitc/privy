@@ -23,7 +23,8 @@
     "get-orders": "node getOrders.js",
     "get-orders:help": "node getOrders.js --help",
     "cancel-order": "node cancelOrder.js",
-    "cancel-order:help": "node cancelOrder.js --help"
+    "cancel-order:help": "node cancelOrder.js --help",
+    "server": "node server.js"
   },
   "author": "",
   "license": "ISC",
@@ -32,7 +33,9 @@
     "@noble/ed25519": "^1.7.3",
     "@privy-io/node": "^0.6.0",
     "bs58": "^5.0.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "ethers": "^6.15.0"
+    "ethers": "^6.15.0",
+    "express": "^4.21.2"
   }
 }
