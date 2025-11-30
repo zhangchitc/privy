@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "privy-orderly": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "/Users/zhangchi/code/privy/py",
+      "env": {
+        "PYTHONPATH": "/Users/zhangchi/code/privy/py"
+      }
+    }
+  }
+}
+
