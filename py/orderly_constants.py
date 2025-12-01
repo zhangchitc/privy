@@ -2,10 +2,11 @@
 Shared constants for Orderly Network integration
 """
 # Orderly API Configuration
-ORDERLY_API_URL = "https://api.orderly.org"  # or https://testnet-api.orderly.org for testnet
+# ORDERLY_API_URL = "https://api.orderly.org"  # or https://testnet-api.orderly.org for testnet
+ORDERLY_API_URL = "https://testnet-api.orderly.org"
 
 # Broker Configuration
-BROKER_ID = "woofi_pro"
+BROKER_ID = "starchild"
 
 # Chain Configuration
 CHAIN_ID = 8453  # Default: Base Mainnet
