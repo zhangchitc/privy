@@ -5,57 +5,19 @@ Based on Orderly documentation: https://orderly.network/docs/build-on-omnichain/
 import os
 import sys
 import argparse
-import base64
 from dotenv import load_dotenv
 from web3 import Web3
-from eth_abi import encode
-from eth_utils import keccak, to_hex
 from orderly_auth import create_authenticated_request, hex_to_private_key
 import requests
 from urllib.parse import urlencode
+from privy_utils import get_account_id, get_wallet_address
+from orderly_constants import ORDERLY_API_URL, BROKER_ID
 
 load_dotenv()
-
-# Configuration
-ORDERLY_API_URL = "https://api.orderly.org"
-BROKER_ID = "woofi_pro"
-
-PRIVY_API_BASE = "https://auth.privy.io/api/v1"
-
-
-def get_account_id(address: str, broker_id: str) -> str:
-    """Generate Orderly account ID"""
-    broker_id_hash = keccak(broker_id.encode())
-    encoded = encode(["address", "bytes32"], [address, broker_id_hash])
-    return to_hex(keccak(encoded))
-
-
-def get_wallet_address(wallet_id: str, app_id: str, app_secret: str) -> str:
-    """Get wallet address from Privy"""
-    auth_string = f"{app_id}:{app_secret}"
-    encoded_auth = base64.b64encode(auth_string.encode()).decode()
-    headers = {
-        "Authorization": f"Basic {encoded_auth}",
-        "privy-app-id": app_id,
-        "Content-Type": "application/json"
-    }
-    response = requests.get(f"{PRIVY_API_BASE}/wallets/{wallet_id}", headers=headers)
-    if not response.ok:
-        raise Exception(f"Failed to get wallet: {response.text}")
-    wallet = response.json()
-    wallet_address = (
-        wallet.get("address") or
-        (wallet.get("addresses", [{}])[0].get("address") if wallet.get("addresses") else None) or
-        (wallet.get("addresses", [None])[0] if wallet.get("addresses") else None)
-    )
-    if not wallet_address:
-        raise Exception("Could not determine wallet address from wallet object")
-    return wallet_address
 
 
 def get_orders(
     wallet_id: str,
-    wallet_address: str = None,
     symbol: str = None,
     side: str = None,
     order_type: str = None,
@@ -84,10 +46,9 @@ def get_orders(
     
     orderly_private_key = hex_to_private_key(orderly_private_key_hex)
     
-    if not wallet_address:
-        print("Fetching wallet details...")
-        wallet_address = get_wallet_address(wallet_id, app_id, app_secret)
-        print(f"   Wallet Address: {wallet_address}")
+    print("Fetching wallet details...")
+    wallet_address = get_wallet_address(wallet_id, app_id, app_secret)
+    print(f"   Wallet Address: {wallet_address}")
     
     account_id = get_account_id(wallet_address, BROKER_ID)
     
@@ -165,7 +126,6 @@ def get_orders(
 def main():
     parser = argparse.ArgumentParser(description="Get orders from Orderly account")
     parser.add_argument("--wallet-id", required=True, help="Privy wallet ID to use (required)")
-    parser.add_argument("--wallet-address", help="Wallet address (optional, will be fetched if not provided)")
     parser.add_argument("--symbol", help="Trading symbol filter (e.g., 'PERP_ETH_USDC')")
     parser.add_argument("--side", choices=["BUY", "SELL"], help="Order side filter: BUY or SELL")
     parser.add_argument("--order-type", choices=["LIMIT", "MARKET"], help="Order type filter: LIMIT or MARKET")
@@ -182,7 +142,6 @@ def main():
     try:
         result = get_orders(
             wallet_id=args.wallet_id,
-            wallet_address=args.wallet_address,
             symbol=args.symbol,
             side=args.side,
             order_type=args.order_type,

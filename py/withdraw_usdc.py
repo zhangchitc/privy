@@ -6,21 +6,15 @@ import os
 import sys
 import argparse
 import time
-import base64
 from dotenv import load_dotenv
 from web3 import Web3
-from eth_abi import encode
-from eth_utils import keccak, to_hex
 from orderly_auth import create_authenticated_request, hex_to_private_key
 import requests
+from privy_utils import get_account_id, get_wallet_address, sign_typed_data, PRIVY_API_BASE
+
+from orderly_constants import ORDERLY_API_URL, CHAIN_ID, BROKER_ID, WITHDRAW_VERIFYING_CONTRACT
 
 load_dotenv()
-
-# Configuration
-ORDERLY_API_URL = "https://api.orderly.org"
-CHAIN_ID = int(os.getenv("CHAIN_ID", "80001"))
-BROKER_ID = "woofi_pro"
-WITHDRAW_VERIFYING_CONTRACT = "0x6F7a338F2aA472838dEFD3283eB360d4Dff5D203"
 
 # Token decimals mapping
 TOKEN_DECIMALS = {
@@ -30,62 +24,6 @@ TOKEN_DECIMALS = {
     "WETH": 18,
     "ETH": 18,
 }
-
-PRIVY_API_BASE = "https://auth.privy.io/api/v1"
-
-
-def get_account_id(address: str, broker_id: str) -> str:
-    """Generate Orderly account ID"""
-    broker_id_hash = keccak(broker_id.encode())
-    encoded = encode(["address", "bytes32"], [address, broker_id_hash])
-    return to_hex(keccak(encoded))
-
-
-def get_wallet_address(wallet_id: str, app_id: str, app_secret: str) -> str:
-    """Get wallet address from Privy"""
-    auth_string = f"{app_id}:{app_secret}"
-    encoded_auth = base64.b64encode(auth_string.encode()).decode()
-    headers = {
-        "Authorization": f"Basic {encoded_auth}",
-        "privy-app-id": app_id,
-        "Content-Type": "application/json"
-    }
-    response = requests.get(f"{PRIVY_API_BASE}/wallets/{wallet_id}", headers=headers)
-    if not response.ok:
-        raise Exception(f"Failed to get wallet: {response.text}")
-    wallet = response.json()
-    wallet_address = (
-        wallet.get("address") or
-        (wallet.get("addresses", [{}])[0].get("address") if wallet.get("addresses") else None) or
-        (wallet.get("addresses", [None])[0] if wallet.get("addresses") else None)
-    )
-    if not wallet_address:
-        raise Exception("Could not determine wallet address from wallet object")
-    return wallet_address
-
-
-def sign_typed_data(wallet_id: str, typed_data: dict, app_id: str, app_secret: str, authorization_secret: str) -> str:
-    """Sign EIP-712 typed data using Privy"""
-    auth_string = f"{app_id}:{app_secret}"
-    encoded_auth = base64.b64encode(auth_string.encode()).decode()
-    headers = {
-        "Authorization": f"Basic {encoded_auth}",
-        "privy-app-id": app_id,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "authorization_context": {"authorization_private_keys": [authorization_secret]},
-        "params": {"typed_data": typed_data}
-    }
-    response = requests.post(
-        f"{PRIVY_API_BASE}/wallets/{wallet_id}/ethereum/sign-typed-data",
-        headers=headers,
-        json=payload
-    )
-    if not response.ok:
-        raise Exception(f"Failed to sign typed data: {response.text}")
-    result = response.json()
-    return result.get("signature")
 
 
 def get_withdrawal_nonce(account_id: str, orderly_key: str, orderly_private_key: bytes) -> int:
@@ -118,7 +56,7 @@ def get_withdrawal_nonce(account_id: str, orderly_key: str, orderly_private_key:
     )
 
 
-def withdraw_funds(wallet_id: str, wallet_address: str = None, amount: str = None, token: str = "USDC", chain_id: int = None) -> dict:
+def withdraw_funds(wallet_id: str, amount: str = None, token: str = "USDC", chain_id: int = None) -> dict:
     """Withdraw funds from Orderly account"""
     app_id = os.getenv("PRIVY_APP_ID")
     app_secret = os.getenv("PRIVY_APP_SECRET")
@@ -145,10 +83,9 @@ def withdraw_funds(wallet_id: str, wallet_address: str = None, amount: str = Non
     chain_id_hex = f"0x{chain_id:x}"
     token = token.upper()
     
-    if not wallet_address:
-        print("Fetching wallet details...")
-        wallet_address = get_wallet_address(wallet_id, app_id, app_secret)
-        print(f"   Wallet Address: {wallet_address}")
+    print("Fetching wallet details...")
+    wallet_address = get_wallet_address(wallet_id, app_id, app_secret)
+    print(f"   Wallet Address: {wallet_address}")
     
     account_id = get_account_id(wallet_address, BROKER_ID)
     
@@ -284,7 +221,6 @@ def withdraw_funds(wallet_id: str, wallet_address: str = None, amount: str = Non
 def main():
     parser = argparse.ArgumentParser(description="Withdraw funds from Orderly account")
     parser.add_argument("--wallet-id", required=True, help="Privy wallet ID to use (required)")
-    parser.add_argument("--wallet-address", help="Wallet address (optional, will be fetched if not provided)")
     parser.add_argument("--amount", required=True, help="Amount to withdraw (required, e.g., '100')")
     parser.add_argument("--token", default="USDC", help="Token symbol to withdraw (optional, default: 'USDC')")
     parser.add_argument("--chain-id", type=int, help="Chain ID (optional, default: 80001 = Polygon Mumbai)")
@@ -301,7 +237,6 @@ def main():
     try:
         result = withdraw_funds(
             wallet_id=args.wallet_id,
-            wallet_address=args.wallet_address,
             amount=args.amount,
             token=args.token,
             chain_id=args.chain_id
