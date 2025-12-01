@@ -8,4 +8,5 @@ base58>=2.1.1
 flask>=3.0.0
 flask-cors>=4.0.0
 fastmcp>=0.9.0
+privy-eth-account>=0.1.0
 
