@@ -12,6 +12,7 @@ import requests
 from urllib.parse import urlencode
 from privy_utils import get_account_id, get_wallet_address
 from orderly_constants import ORDERLY_API_URL, BROKER_ID
+from orderly_db import get_orderly_keys_or_raise
 
 load_dotenv()
 
@@ -20,8 +21,6 @@ def cancel_order(wallet_id: str, order_id: int = None, symbol: str = None) -> di
     """Cancel an order on Orderly Network"""
     app_id = os.getenv("PRIVY_APP_ID")
     app_secret = os.getenv("PRIVY_APP_SECRET")
-    orderly_key = os.getenv("ORDERLY_KEY")
-    orderly_private_key_hex = os.getenv("ORDERLY_PRIVATE_KEY")
     
     if not app_id or not app_secret:
         raise ValueError("Missing PRIVY_APP_ID or PRIVY_APP_SECRET")
@@ -31,11 +30,9 @@ def cancel_order(wallet_id: str, order_id: int = None, symbol: str = None) -> di
         raise ValueError("Order ID is required")
     if not symbol:
         raise ValueError("Symbol is required")
-    if not orderly_key:
-        raise ValueError("ORDERLY_KEY environment variable is required")
-    if not orderly_private_key_hex:
-        raise ValueError("ORDERLY_PRIVATE_KEY environment variable is required")
     
+    # Get Orderly keys from database
+    orderly_key, orderly_private_key_hex = get_orderly_keys_or_raise(wallet_id)
     orderly_private_key = hex_to_private_key(orderly_private_key_hex)
     
     print("Fetching wallet details...")

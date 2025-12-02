@@ -11,8 +11,8 @@ from web3 import Web3
 from orderly_auth import create_authenticated_request, hex_to_private_key
 import requests
 from privy_utils import get_account_id, get_wallet_address, sign_typed_data, PRIVY_API_BASE
-
 from orderly_constants import ORDERLY_API_URL, CHAIN_ID, BROKER_ID, WITHDRAW_VERIFYING_CONTRACT
+from orderly_db import get_orderly_keys_or_raise
 
 load_dotenv()
 
@@ -61,8 +61,6 @@ def withdraw_funds(wallet_id: str, amount: str = None, token: str = "USDC", chai
     app_id = os.getenv("PRIVY_APP_ID")
     app_secret = os.getenv("PRIVY_APP_SECRET")
     authorization_secret = os.getenv("PRIVY_AUTHORIZATION_SECRET")
-    orderly_key = os.getenv("ORDERLY_KEY")
-    orderly_private_key_hex = os.getenv("ORDERLY_PRIVATE_KEY")
     
     if not app_id or not app_secret:
         raise ValueError("Missing PRIVY_APP_ID or PRIVY_APP_SECRET")
@@ -72,11 +70,9 @@ def withdraw_funds(wallet_id: str, amount: str = None, token: str = "USDC", chai
         raise ValueError("Wallet ID is required")
     if not amount:
         raise ValueError("Amount is required")
-    if not orderly_key:
-        raise ValueError("ORDERLY_KEY environment variable is required")
-    if not orderly_private_key_hex:
-        raise ValueError("ORDERLY_PRIVATE_KEY environment variable is required")
     
+    # Get Orderly keys from database
+    orderly_key, orderly_private_key_hex = get_orderly_keys_or_raise(wallet_id)
     orderly_private_key = hex_to_private_key(orderly_private_key_hex)
     
     chain_id = chain_id or CHAIN_ID

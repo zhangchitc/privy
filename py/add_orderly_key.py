@@ -7,13 +7,13 @@ import sys
 import argparse
 import time
 from dotenv import load_dotenv
-from pathlib import Path
 import requests
 from nacl.signing import SigningKey
 from nacl.utils import random
 import base58
 from privy_utils import get_wallet_address, sign_typed_data, PRIVY_API_BASE
 from orderly_constants import ORDERLY_API_URL, CHAIN_ID, BROKER_ID, VERIFYING_CONTRACT
+from orderly_db import save_orderly_keys
 
 load_dotenv()
 
@@ -43,37 +43,6 @@ def generate_orderly_key():
     }
 
 
-def update_env_file(orderly_key: str, orderly_private_key_hex: str):
-    """Update or append ORDERLY_KEY and ORDERLY_PRIVATE_KEY to .env file"""
-    env_path = Path(".env")
-    
-    # Read existing .env file if it exists
-    env_content = ""
-    if env_path.exists():
-        env_content = env_path.read_text()
-    
-    # Check if ORDERLY_KEY already exists in .env
-    has_orderly_key = any(line.startswith("ORDERLY_KEY=") for line in env_content.splitlines())
-    has_orderly_private_key = any(line.startswith("ORDERLY_PRIVATE_KEY=") for line in env_content.splitlines())
-    
-    lines = env_content.splitlines() if env_content else []
-    
-    # Update or append ORDERLY_KEY
-    if has_orderly_key:
-        lines = [line if not line.startswith("ORDERLY_KEY=") else f"ORDERLY_KEY={orderly_key}" for line in lines]
-    else:
-        if lines and not lines[-1].endswith("\n"):
-            lines.append("")
-        lines.append(f"ORDERLY_KEY={orderly_key}")
-    
-    # Update or append ORDERLY_PRIVATE_KEY
-    if has_orderly_private_key:
-        lines = [line if not line.startswith("ORDERLY_PRIVATE_KEY=") else f"ORDERLY_PRIVATE_KEY={orderly_private_key_hex}" for line in lines]
-    else:
-        lines.append(f"ORDERLY_PRIVATE_KEY={orderly_private_key_hex}")
-    
-    # Write back to .env file
-    env_path.write_text("\n".join(lines) + "\n")
 
 
 def add_orderly_key(wallet_id: str, chain_id: int = None, broker_id: str = None) -> dict:
@@ -210,10 +179,11 @@ def add_orderly_key(wallet_id: str, chain_id: int = None, broker_id: str = None)
         print("\n✅ Orderly Key added successfully!")
         print(f"Response: {data}")
         
-        # Save Orderly Key and Private Key to .env file
-        update_env_file(orderly_key, orderly_private_key_hex)
+        # Save Orderly Key and Private Key to database
+        save_orderly_keys(wallet_id, orderly_key, orderly_private_key_hex)
         
-        print("\n✅ Saved to .env file:")
+        print("\n✅ Saved to database:")
+        print(f"   Wallet ID: {wallet_id}")
         print(f"   ORDERLY_KEY={orderly_key}")
         print(f"   ORDERLY_PRIVATE_KEY={orderly_private_key_hex}")
         

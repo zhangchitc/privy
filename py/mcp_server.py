@@ -340,5 +340,5 @@ def send_transaction_tool(
 
 
 if __name__ == "__main__":
-    # Run the MCP server using stdio transport (default for MCP)
-    mcp.run()
+    # Run the MCP server using streamable HTTP transport (SSE)
+    mcp.run(transport="http", host="localhost", port=8000, path="/mcp")
