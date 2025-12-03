@@ -45,7 +45,6 @@ def create_agentic_wallet_tool(
 @mcp.tool()
 def register_orderly_account_tool(
     wallet_id: str,
-    wallet_address: str = None,
     chain_id: str = "421614"
 ) -> dict:
     """
@@ -54,7 +53,6 @@ def register_orderly_account_tool(
     
     Args:
         wallet_id: The Privy wallet ID (required)
-        wallet_address: The wallet address (optional, will be fetched if not provided)
         chain_id: Chain ID (optional, default: 421614 = Arbitrum Sepolia)
     
     Returns:
@@ -62,7 +60,6 @@ def register_orderly_account_tool(
     """
     return register_orderly_account(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         chain_id=chain_id
     )
 
@@ -70,7 +67,6 @@ def register_orderly_account_tool(
 @mcp.tool()
 def add_orderly_key_tool(
     wallet_id: str,
-    wallet_address: str = None,
     chain_id: int = None
 ) -> dict:
     """
@@ -79,7 +75,6 @@ def add_orderly_key_tool(
     
     Args:
         wallet_id: The Privy wallet ID (required)
-        wallet_address: The wallet address (optional, will be fetched if not provided)
         chain_id: Chain ID (optional, default: 80001 = Polygon Mumbai)
     
     Returns:
@@ -87,7 +82,6 @@ def add_orderly_key_tool(
     """
     return add_orderly_key(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         chain_id=chain_id
     )
 
@@ -96,7 +90,6 @@ def add_orderly_key_tool(
 def deposit_usdc_tool(
     wallet_id: str,
     amount: str,
-    wallet_address: str = None,
     chain_id: int = None
 ) -> dict:
     """
@@ -106,7 +99,6 @@ def deposit_usdc_tool(
     Args:
         wallet_id: The Privy wallet ID (required)
         amount: Amount of USDC to deposit (required, e.g., '100')
-        wallet_address: The wallet address (optional, will be fetched if not provided)
         chain_id: Chain ID (optional, default: 80001 = Polygon Mumbai)
     
     Returns:
@@ -114,7 +106,6 @@ def deposit_usdc_tool(
     """
     return deposit_usdc(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         amount=amount,
         chain_id=chain_id
     )
@@ -122,9 +113,7 @@ def deposit_usdc_tool(
 
 @mcp.tool()
 def get_holding_tool(
-    wallet_id: str,
-    wallet_address: str = None,
-    all: bool = False
+    wallet_id: str
 ) -> dict:
     """
     Gets current holdings from an Orderly account.
@@ -132,16 +121,12 @@ def get_holding_tool(
     
     Args:
         wallet_id: The Privy wallet ID (required)
-        wallet_address: The wallet address (optional, will be fetched if not provided)
-        all: Include all tokens even if balance is empty (default: False)
     
     Returns:
         Holdings data with list of tokens and balances
     """
     return get_holding(
-        wallet_id=wallet_id,
-        wallet_address=wallet_address,
-        all=all
+        wallet_id=wallet_id
     )
 
 
@@ -151,7 +136,6 @@ def create_order_tool(
     symbol: str,
     order_type: str,
     side: str,
-    wallet_address: str = None,
     order_price: float = None,
     order_quantity: float = None,
     order_amount: float = None,
@@ -171,7 +155,6 @@ def create_order_tool(
         symbol: Trading symbol (e.g., 'PERP_ETH_USDC') (required)
         order_type: Order type: LIMIT, MARKET, IOC, FOK, POST_ONLY, ASK, BID (required)
         side: Order side: BUY or SELL (required)
-        wallet_address: The wallet address (optional, will be fetched if not provided)
         order_price: Order price (required for LIMIT/IOC/FOK/POST_ONLY)
         order_quantity: Order quantity in base currency
         order_amount: Order amount in quote currency (for MARKET/BID/ASK BUY orders)
@@ -187,7 +170,6 @@ def create_order_tool(
     """
     return create_order(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         symbol=symbol,
         order_type=order_type,
         side=side,
@@ -206,7 +188,6 @@ def create_order_tool(
 @mcp.tool()
 def get_orders_tool(
     wallet_id: str,
-    wallet_address: str = None,
     symbol: str = None,
     side: str = None,
     order_type: str = None,
@@ -223,7 +204,6 @@ def get_orders_tool(
     
     Args:
         wallet_id: The Privy wallet ID (required)
-        wallet_address: The wallet address (optional, will be fetched if not provided)
         symbol: Trading symbol filter (e.g., 'PERP_ETH_USDC')
         side: Order side filter: BUY or SELL
         order_type: Order type filter: LIMIT or MARKET
@@ -240,7 +220,6 @@ def get_orders_tool(
     """
     return get_orders(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         symbol=symbol,
         side=side,
         order_type=order_type,
@@ -258,8 +237,7 @@ def get_orders_tool(
 def cancel_order_tool(
     wallet_id: str,
     order_id: int,
-    symbol: str,
-    wallet_address: str = None
+    symbol: str
 ) -> dict:
     """
     Cancels an order on Orderly Network.
@@ -268,14 +246,12 @@ def cancel_order_tool(
         wallet_id: The Privy wallet ID (required)
         order_id: Order ID to cancel (required)
         symbol: Trading symbol (e.g., 'PERP_ETH_USDC') (required)
-        wallet_address: The wallet address (optional, will be fetched if not provided)
     
     Returns:
         Cancellation result with order status
     """
     return cancel_order(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         order_id=order_id,
         symbol=symbol
     )
@@ -285,7 +261,6 @@ def cancel_order_tool(
 def withdraw_funds_tool(
     wallet_id: str,
     amount: str,
-    wallet_address: str = None,
     token: str = "USDC",
     chain_id: int = None
 ) -> dict:
@@ -296,7 +271,6 @@ def withdraw_funds_tool(
     Args:
         wallet_id: The Privy wallet ID (required)
         amount: Amount to withdraw (required, e.g., '100')
-        wallet_address: The wallet address (optional, will be fetched if not provided)
         token: Token symbol to withdraw (default: 'USDC')
         chain_id: Chain ID (optional, default: 80001 = Polygon Mumbai)
     
@@ -305,7 +279,6 @@ def withdraw_funds_tool(
     """
     return withdraw_funds(
         wallet_id=wallet_id,
-        wallet_address=wallet_address,
         amount=amount,
         token=token,
         chain_id=chain_id

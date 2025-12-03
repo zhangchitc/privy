@@ -16,13 +16,12 @@ from orderly_db import get_orderly_keys_or_raise
 load_dotenv()
 
 
-def get_holding(wallet_id: str, all: bool = False) -> dict:
+def get_holding(wallet_id: str) -> dict:
     """
     Get current holding from Orderly account
     
     Args:
         wallet_id: The Privy wallet ID (required)
-        all: If true, return all tokens even if balance is empty (optional, default: false)
         
     Returns:
         Holding result
@@ -51,11 +50,9 @@ def get_holding(wallet_id: str, all: bool = False) -> dict:
     print(f"   Wallet Address: {wallet_address}")
     print(f"   Broker ID: {BROKER_ID}")
     print(f"   Account ID: {account_id}")
-    print(f"   Include all tokens: {all}")
     
     # Build query parameters
-    query_params = "?all=true" if all else ""
-    path = f"/v1/client/holding{query_params}"
+    path = "/v1/client/holding"
     
     # Create authenticated request
     request_config = create_authenticated_request(
@@ -93,7 +90,7 @@ def get_holding(wallet_id: str, all: bool = False) -> dict:
     }
 
 
-def get_holding_async(wallet_id: str, all: bool = False) -> dict:
+def get_holding_async(wallet_id: str) -> dict:
     """Alternative version of get_holding (kept for compatibility)"""
     app_id = os.getenv("PRIVY_APP_ID")
     app_secret = os.getenv("PRIVY_APP_SECRET")
@@ -118,8 +115,7 @@ def get_holding_async(wallet_id: str, all: bool = False) -> dict:
     print(f"   Wallet Address: {wallet_address}")
     print(f"   Account ID: {account_id}")
     
-    query_params = "?all=true" if all else ""
-    path = f"/v1/client/holding{query_params}"
+    path = "/v1/client/holding"
     
     request_config = create_authenticated_request(
         "GET",
@@ -158,14 +154,12 @@ def get_holding_async(wallet_id: str, all: bool = False) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="Get current holding from Orderly account")
     parser.add_argument("--wallet-id", required=True, help="Privy wallet ID to use (required)")
-    parser.add_argument("--all", action="store_true", help="Include all tokens even if balance is empty")
     
     args = parser.parse_args()
     
     try:
         result = get_holding(
-            wallet_id=args.wallet_id,
-            all=args.all
+            wallet_id=args.wallet_id
         )
         
         # Display holdings

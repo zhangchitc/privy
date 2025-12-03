@@ -99,9 +99,7 @@ def api_get_holding():
     try:
         data = request.json or {}
         result = get_holding(
-            wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
-            all=data.get("all", False)
+            wallet_id=data.get("walletId")
         )
         return jsonify({"success": True, "data": result})
     except Exception as error:
