@@ -3,6 +3,7 @@ MCP Server for Privy/Orderly Network operations
 Exposes all Python scripts as MCP tools for AI assistants
 Built with FastMCP for simplicity
 """
+import os
 from fastmcp import FastMCP
 from dotenv import load_dotenv
 
@@ -314,4 +315,8 @@ def send_transaction_tool(
 
 if __name__ == "__main__":
     # Run the MCP server using streamable HTTP transport (SSE)
-    mcp.run(transport="http", host="localhost", port=8000, path="/mcp")
+    # Use PORT environment variable (set by Heroku) or default to 8000 for local development
+    port = int(os.environ.get("PORT", 8000))
+    # Use 0.0.0.0 to listen on all interfaces (required for Heroku)
+    host = os.environ.get("HOST", "0.0.0.0")
+    mcp.run(transport="http", host=host, port=port, path="/mcp")
