@@ -2,7 +2,7 @@
 Flask server that exposes API endpoints for all Privy/Orderly operations
 """
 import os
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from create_agentic_wallet import create_agentic_wallet
@@ -17,18 +17,17 @@ from withdraw_usdc import withdraw_funds
 
 load_dotenv()
 
-app = Flask(__name__, static_folder="public", static_url_path="")
+app = Flask(__name__)
 CORS(app)
 
-# Serve static files
+# Root endpoint
 @app.route("/")
 def index():
-    return send_from_directory("public", "index.html")
-
-
-@app.route("/<path:path>")
-def serve_static(path):
-    return send_from_directory("public", path)
+    return jsonify({
+        "message": "Privy Orderly API Server",
+        "status": "running",
+        "endpoints": "/api/health"
+    })
 
 
 # API Routes
@@ -57,7 +56,6 @@ def api_register_orderly():
         data = request.json or {}
         result = register_orderly_account(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             chain_id=data.get("chainId")
         )
         return jsonify({"success": True, "data": result})
@@ -71,7 +69,6 @@ def api_add_orderly_key():
         data = request.json or {}
         result = add_orderly_key(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             chain_id=data.get("chainId")
         )
         return jsonify({"success": True, "data": result})
@@ -85,7 +82,6 @@ def api_deposit_usdc():
         data = request.json or {}
         result = deposit_usdc(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             amount=data.get("amount"),
             chain_id=data.get("chainId")
         )
@@ -112,7 +108,6 @@ def api_create_order():
         data = request.json or {}
         result = create_order(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             symbol=data.get("symbol"),
             order_type=data.get("orderType"),
             side=data.get("side"),
@@ -138,7 +133,6 @@ def api_get_orders():
         data = request.json or {}
         result = get_orders(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             symbol=data.get("symbol"),
             side=data.get("side"),
             order_type=data.get("orderType"),
@@ -161,7 +155,6 @@ def api_cancel_order():
         data = request.json or {}
         result = cancel_order(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             order_id=data.get("orderId"),
             symbol=data.get("symbol")
         )
@@ -176,7 +169,6 @@ def api_withdraw_usdc():
         data = request.json or {}
         result = withdraw_funds(
             wallet_id=data.get("walletId"),
-            wallet_address=data.get("walletAddress"),
             amount=data.get("amount"),
             token=data.get("token", "USDC"),
             chain_id=data.get("chainId")
@@ -187,8 +179,15 @@ def api_withdraw_usdc():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 3000))
-    print(f"🚀 Server running on http://localhost:{port}")
-    print("📝 Make sure your .env file is configured with all required credentials")
-    app.run(host="0.0.0.0", port=port, debug=True)
+    port = int(os.environ.get("PORT", 3000))
+    # Disable debug mode in production (Heroku sets this automatically)
+    debug = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
+    
+    if not debug:
+        print(f"🚀 Server running on port {port}")
+    else:
+        print(f"🚀 Server running on http://localhost:{port}")
+        print("📝 Make sure your .env file is configured with all required credentials")
+    
+    app.run(host="0.0.0.0", port=port, debug=debug)
 

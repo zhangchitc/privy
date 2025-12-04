@@ -1,1 +1,1 @@
-web: python mcp_server.py
+web: gunicorn server:app
