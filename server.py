@@ -10,6 +10,7 @@ from register_orderly_account import register_orderly_account
 from add_orderly_key import add_orderly_key
 from deposit_usdc import deposit_usdc
 from get_holding import get_holding
+from get_positions import get_positions
 from create_order import create_order
 from get_orders import get_orders
 from cancel_order import cancel_order
@@ -95,6 +96,18 @@ def api_get_holding():
     try:
         data = request.json or {}
         result = get_holding(
+            wallet_id=data.get("walletId")
+        )
+        return jsonify({"success": True, "data": result})
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
+@app.route("/api/get-positions", methods=["POST"])
+def api_get_positions():
+    try:
+        data = request.json or {}
+        result = get_positions(
             wallet_id=data.get("walletId")
         )
         return jsonify({"success": True, "data": result})
