@@ -1,31 +1,36 @@
 """
 Database module for storing Orderly keys per wallet_id
-Uses SQLite for simplicity - no server required, built into Python
+Uses PostgreSQL for Heroku deployment (DATABASE_URL env var required)
 """
-import sqlite3
 import os
-from pathlib import Path
 from typing import Optional, Tuple
-
-
-# Database file path (in the same directory as this script)
-DB_PATH = Path(__file__).parent / "orderly_keys.db"
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 def get_db_connection():
-    """Get a database connection"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # Enable column access by name
-    return conn
+    """Get a PostgreSQL database connection"""
+    database_url = os.environ.get("DATABASE_URL")
+    
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable is required")
+    
+    # Heroku uses postgres:// but psycopg2 requires postgresql://
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    return psycopg2.connect(database_url)
 
 
 def init_db():
     """Initialize the database and create tables if they don't exist"""
     conn = get_db_connection()
+    cursor = conn.cursor()
+    
     try:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS orderly_keys (
-                wallet_id TEXT PRIMARY KEY,
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS privy_orderly_account_private_keys (
+                wallet_id VARCHAR(255) PRIMARY KEY,
                 orderly_key TEXT NOT NULL,
                 orderly_private_key_hex TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -34,6 +39,7 @@ def init_db():
         """)
         conn.commit()
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -48,14 +54,22 @@ def save_orderly_keys(wallet_id: str, orderly_key: str, orderly_private_key_hex:
     """
     init_db()  # Ensure table exists
     conn = get_db_connection()
+    cursor = conn.cursor()
+    
     try:
-        conn.execute("""
-            INSERT OR REPLACE INTO orderly_keys 
+        cursor.execute("""
+            INSERT INTO privy_orderly_account_private_keys 
             (wallet_id, orderly_key, orderly_private_key_hex, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (wallet_id) 
+            DO UPDATE SET 
+                orderly_key = EXCLUDED.orderly_key,
+                orderly_private_key_hex = EXCLUDED.orderly_private_key_hex,
+                updated_at = CURRENT_TIMESTAMP
         """, (wallet_id, orderly_key, orderly_private_key_hex))
         conn.commit()
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -71,9 +85,11 @@ def get_orderly_keys(wallet_id: str) -> Optional[Tuple[str, str]]:
     """
     init_db()  # Ensure table exists
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
     try:
-        cursor = conn.execute(
-            "SELECT orderly_key, orderly_private_key_hex FROM orderly_keys WHERE wallet_id = ?",
+        cursor.execute(
+            "SELECT orderly_key, orderly_private_key_hex FROM privy_orderly_account_private_keys WHERE wallet_id = %s",
             (wallet_id,)
         )
         row = cursor.fetchone()
@@ -81,6 +97,7 @@ def get_orderly_keys(wallet_id: str) -> Optional[Tuple[str, str]]:
             return (row["orderly_key"], row["orderly_private_key_hex"])
         return None
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -118,11 +135,14 @@ def delete_orderly_keys(wallet_id: str) -> bool:
     """
     init_db()  # Ensure table exists
     conn = get_db_connection()
+    cursor = conn.cursor()
+    
     try:
-        cursor = conn.execute("DELETE FROM orderly_keys WHERE wallet_id = ?", (wallet_id,))
+        cursor.execute("DELETE FROM privy_orderly_account_private_keys WHERE wallet_id = %s", (wallet_id,))
         conn.commit()
         return cursor.rowcount > 0
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -135,9 +155,12 @@ def list_all_wallets() -> list:
     """
     init_db()  # Ensure table exists
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
     try:
-        cursor = conn.execute("SELECT wallet_id, created_at, updated_at FROM orderly_keys ORDER BY created_at DESC")
+        cursor.execute("SELECT wallet_id, created_at, updated_at FROM privy_orderly_account_private_keys ORDER BY created_at DESC")
         return [dict(row) for row in cursor.fetchall()]
     finally:
+        cursor.close()
         conn.close()
 
