@@ -77,6 +77,50 @@ def api_add_orderly_key():
         return jsonify({"success": False, "error": str(error)}), 500
 
 
+@app.route("/api/prepare-orderly-account", methods=["POST"])
+def api_prepare_orderly_account():
+    """
+    Complete wallet setup: creates wallet, registers Orderly account, and adds Orderly key
+    """
+    try:
+        data = request.json or {}
+        
+        # Step 1: Create agentic wallet
+        wallet = create_agentic_wallet(
+            policy_id=data.get("policyId"),
+            chain_type=data.get("chainType", "ethereum")
+        )
+        
+        # Extract wallet ID from the result
+        wallet_id = wallet.get("id") or wallet.get("wallet_id")
+        if not wallet_id:
+            raise ValueError("Failed to get wallet ID from wallet creation response")
+        
+        # Step 2: Register Orderly account
+        register_result = register_orderly_account(
+            wallet_id=wallet_id,
+            chain_id=data.get("chainId", "421614")
+        )
+        
+        # Step 3: Add Orderly key
+        # Use chain_id from request or default from add_orderly_key function
+        add_key_result = add_orderly_key(
+            wallet_id=wallet_id,
+            chain_id=int(data.get("chainId"))
+        )
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "walletId": wallet_id,
+                "walletAddress": wallet.get("address"),
+                "orderlyAccountId": register_result.get("orderlyAccountId"),
+            }
+        })
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
 @app.route("/api/deposit-usdc", methods=["POST"])
 def api_deposit_usdc():
     try:
