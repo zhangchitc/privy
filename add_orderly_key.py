@@ -106,7 +106,6 @@ def add_orderly_key(wallet_id: str, chain_id: int = None, broker_id: str = None)
         orderly_private_key_hex = key_pair["privateKeyHex"]
         
         print(f"   Generated Orderly Key: {orderly_key}")
-        print(f"   Generated Orderly Private Key: {orderly_private_key_hex}")
         
         # Create EIP-712 message for adding Orderly Key
         timestamp = int(time.time() * 1000)
@@ -185,7 +184,6 @@ def add_orderly_key(wallet_id: str, chain_id: int = None, broker_id: str = None)
         print("\n✅ Saved to database:")
         print(f"   Wallet ID: {wallet_id}")
         print(f"   ORDERLY_KEY={orderly_key}")
-        print(f"   ORDERLY_PRIVATE_KEY={orderly_private_key_hex}")
         
         return {
             "success": True,
