@@ -177,7 +177,6 @@ def api_create_order():
             client_order_id=data.get("clientOrderId"),
             order_tag=data.get("orderTag"),
             level=data.get("level"),
-            post_only_adjust=data.get("postOnlyAdjust"),
         )
         return jsonify({"success": True, "data": result})
     except Exception as error:
