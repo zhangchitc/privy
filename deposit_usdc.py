@@ -4,12 +4,11 @@ Deposit USDC to Orderly account using Privy agentic wallet
 import os
 import sys
 import argparse
-import base64
 from dotenv import load_dotenv
-import requests
 from web3 import Web3
 from eth_utils import keccak, to_hex
-from privy_utils import get_account_id, get_wallet_address, PRIVY_API_BASE
+from privy import PrivyAPI
+from privy_utils import get_account_id, get_wallet_address
 
 from orderly_constants import ORDERLY_API_URL, CHAIN_ID, BROKER_ID
 
@@ -151,27 +150,29 @@ VAULT_ABI = [
 
 
 def send_transaction(wallet_id: str, transaction: dict, app_id: str, app_secret: str, authorization_secret: str, chain_id: int) -> dict:
-    """Send transaction using Privy"""
-    auth_string = f"{app_id}:{app_secret}"
-    encoded_auth = base64.b64encode(auth_string.encode()).decode()
-    headers = {
-        "Authorization": f"Basic {encoded_auth}",
-        "privy-app-id": app_id,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "authorization_context": {"authorization_private_keys": [authorization_secret]},
-        "caip2": f"eip155:{chain_id}",
-        "params": {"transaction": transaction}
-    }
-    response = requests.post(
-        f"{PRIVY_API_BASE}/wallets/{wallet_id}/ethereum/send-transaction",
-        headers=headers,
-        json=payload
+    """Send transaction using PrivyAPI"""
+    client = PrivyAPI(
+        app_id=app_id,
+        app_secret=app_secret
     )
-    if not response.ok:
-        raise Exception(f"Failed to send transaction: {response.text}")
-    return response.json()
+    client.update_authorization_key(authorization_secret)
+    
+    result = client.wallets.rpc(
+        wallet_id=wallet_id,
+        method="eth_sendTransaction",
+        caip2=f"eip155:{chain_id}",
+        params={
+            "transaction": transaction
+        }
+    )
+    
+    # Normalize response format
+    if isinstance(result, dict) and "result" in result:
+        return {"transaction_hash": result.get("result"), "hash": result.get("result"), "status": "pending"}
+    elif isinstance(result, dict):
+        return result
+    else:
+        return {"transaction_hash": str(result), "hash": str(result), "status": "pending"}
 
 
 def deposit_usdc(wallet_id: str, amount: str = None, chain_id: int = None) -> dict:
@@ -241,7 +242,7 @@ def deposit_usdc(wallet_id: str, amount: str = None, chain_id: int = None) -> di
     
     if current_allowance < amount_wei:
         print("\nApproving USDC transfer to Orderly Vault...")
-        approve_data = usdc_contract.encodeABI(fn_name="approve", args=[vault_address, amount_wei])
+        approve_data = usdc_contract.encode_abi("approve", args=[vault_address, amount_wei])
         
         approve_response = send_transaction(
             wallet_id,
@@ -298,7 +299,7 @@ def deposit_usdc(wallet_id: str, amount: str = None, chain_id: int = None) -> di
     print(f"   Deposit fee: {deposit_fee / 1e18} ETH")
     
     # Encode deposit function
-    deposit_data_encoded = vault_contract.encodeABI(fn_name="deposit", args=[deposit_data])
+    deposit_data_encoded = vault_contract.encode_abi("deposit", args=[deposit_data])
     
     # Call deposit
     print(f"\nDepositing {amount} USDC to Orderly Vault...")

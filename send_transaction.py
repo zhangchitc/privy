@@ -4,14 +4,10 @@ Sends a transaction from an agentic wallet using Privy
 import os
 import sys
 import argparse
-import base64
 from dotenv import load_dotenv
-import requests
+from privy import PrivyAPI
 
 load_dotenv()
-
-# Privy API base URL
-PRIVY_API_BASE = "https://auth.privy.io/api/v1"
 
 # Chain name mapping
 CHAIN_NAMES = {
@@ -63,45 +59,36 @@ def send_transaction(wallet_id: str, to: str, value: str = "1000000000000000", c
     print(f"   Chain ID: {chain_id} ({get_chain_name(chain_id)}) = {chain_id_hex}")
     
     try:
-        # Send transaction using Privy API
-        app_id = os.getenv("PRIVY_APP_ID")
-        auth_string = f"{app_id}:{app_secret}"
-        encoded_auth = base64.b64encode(auth_string.encode()).decode()
-        headers = {
-            "Authorization": f"Basic {encoded_auth}",
-            "privy-app-id": app_id,
-            "Content-Type": "application/json",
-        }
+        # Initialize Privy client
+        client = PrivyAPI(
+            app_id=app_id,
+            app_secret=app_secret
+        )
+        client.update_authorization_key(authorization_secret)
         
-        payload = {
-            "authorization_context": {
-                "authorization_private_keys": [authorization_secret]
-            },
-            "caip2": f"eip155:{chain_id}",
-            "params": {
+        # Send transaction using PrivyAPI
+        result = client.wallets.rpc(
+            wallet_id=wallet_id,
+            method="eth_sendTransaction",
+            caip2=f"eip155:{chain_id}",
+            params={
                 "transaction": {
-                    "chain_id": chain_id_hex,
                     "to": to,
                     "value": value_hex,
                 }
             }
-        }
-        
-        response = requests.post(
-            f"{PRIVY_API_BASE}/wallets/{wallet_id}/ethereum/send-transaction",
-            headers=headers,
-            json=payload
         )
-        
-        if not response.ok:
-            raise Exception(f"Failed to send transaction: {response.text}")
-        
-        result = response.json()
         
         print("\n✅ Transaction sent successfully!")
         print(f"Transaction details: {result}")
         
-        return result
+        # Normalize response format
+        if isinstance(result, dict) and "result" in result:
+            return {"transaction_hash": result.get("result"), "hash": result.get("result"), "status": "pending"}
+        elif isinstance(result, dict):
+            return result
+        else:
+            return {"transaction_hash": str(result), "hash": str(result), "status": "pending"}
     except Exception as error:
         print(f"\n❌ Failed to send transaction: {error}")
         raise
