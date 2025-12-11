@@ -2,6 +2,7 @@
 Flask server that exposes API endpoints for all Privy/Orderly operations
 """
 import os
+from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -21,6 +22,39 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# Authentication
+def require_api_key(f):
+    """
+    Decorator to require API key authentication for protected endpoints.
+    Expects API key in X-API-Key header.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = os.environ.get("API_KEY")
+        
+        # If no API_KEY is set, skip authentication (for development)
+        if not api_key:
+            return f(*args, **kwargs)
+        
+        # Get API key from request header
+        provided_key = request.headers.get("X-API-Key")
+        
+        if not provided_key:
+            return jsonify({
+                "success": False,
+                "error": "Missing API key. Please provide X-API-Key header."
+            }), 401
+        
+        if provided_key != api_key:
+            return jsonify({
+                "success": False,
+                "error": "Invalid API key."
+            }), 401
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 # Root endpoint
 @app.route("/")
 def index():
@@ -39,6 +73,7 @@ def health():
 
 
 @app.route("/api/create-wallet", methods=["POST"])
+@require_api_key
 def api_create_wallet():
     try:
         data = request.json or {}
@@ -52,6 +87,7 @@ def api_create_wallet():
 
 
 @app.route("/api/register-orderly", methods=["POST"])
+@require_api_key
 def api_register_orderly():
     try:
         data = request.json or {}
@@ -65,6 +101,7 @@ def api_register_orderly():
 
 
 @app.route("/api/add-orderly-key", methods=["POST"])
+@require_api_key
 def api_add_orderly_key():
     try:
         data = request.json or {}
@@ -78,6 +115,7 @@ def api_add_orderly_key():
 
 
 @app.route("/api/prepare-orderly-account", methods=["POST"])
+@require_api_key
 def api_prepare_orderly_account():
     """
     Complete wallet setup: creates wallet, registers Orderly account, and adds Orderly key
@@ -122,6 +160,7 @@ def api_prepare_orderly_account():
 
 
 @app.route("/api/deposit-usdc", methods=["POST"])
+@require_api_key
 def api_deposit_usdc():
     try:
         data = request.json or {}
@@ -136,6 +175,7 @@ def api_deposit_usdc():
 
 
 @app.route("/api/get-holding", methods=["POST"])
+@require_api_key
 def api_get_holding():
     try:
         data = request.json or {}
@@ -148,6 +188,7 @@ def api_get_holding():
 
 
 @app.route("/api/get-positions", methods=["POST"])
+@require_api_key
 def api_get_positions():
     try:
         data = request.json or {}
@@ -160,6 +201,7 @@ def api_get_positions():
 
 
 @app.route("/api/create-order", methods=["POST"])
+@require_api_key
 def api_create_order():
     try:
         data = request.json or {}
@@ -184,6 +226,7 @@ def api_create_order():
 
 
 @app.route("/api/get-orders", methods=["POST"])
+@require_api_key
 def api_get_orders():
     try:
         data = request.json or {}
@@ -206,6 +249,7 @@ def api_get_orders():
 
 
 @app.route("/api/cancel-order", methods=["POST"])
+@require_api_key
 def api_cancel_order():
     try:
         data = request.json or {}
@@ -220,6 +264,7 @@ def api_cancel_order():
 
 
 @app.route("/api/withdraw-usdc", methods=["POST"])
+@require_api_key
 def api_withdraw_usdc():
     try:
         data = request.json or {}
