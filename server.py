@@ -15,6 +15,7 @@ from get_positions import get_positions
 from create_order import create_order
 from get_orders import get_orders
 from cancel_order import cancel_order
+from cancel_all_orders import cancel_all_orders
 from withdraw_usdc import withdraw_funds
 
 load_dotenv()
@@ -257,6 +258,19 @@ def api_cancel_order():
             wallet_id=data.get("walletId"),
             order_id=data.get("orderId"),
             symbol=data.get("symbol")
+        )
+        return jsonify({"success": True, "data": result})
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
+@app.route("/api/cancel-all-orders", methods=["POST"])
+@require_api_key
+def api_cancel_all_orders():
+    try:
+        data = request.json or {}
+        result = cancel_all_orders(
+            wallet_id=data.get("walletId")
         )
         return jsonify({"success": True, "data": result})
     except Exception as error:
