@@ -17,6 +17,7 @@ from get_orders import get_orders
 from cancel_order import cancel_order
 from cancel_all_orders import cancel_all_orders
 from close_all_positions import close_all_positions
+from settle_pnl import settle_pnl
 from withdraw_usdc import withdraw_funds
 
 load_dotenv()
@@ -285,6 +286,20 @@ def api_close_all_positions():
         data = request.json or {}
         result = close_all_positions(
             wallet_id=data.get("walletId")
+        )
+        return jsonify({"success": True, "data": result})
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
+@app.route("/api/settle-pnl", methods=["POST"])
+@require_api_key
+def api_settle_pnl():
+    try:
+        data = request.json or {}
+        result = settle_pnl(
+            wallet_id=data.get("walletId"),
+            chain_id=data.get("chainId")
         )
         return jsonify({"success": True, "data": result})
     except Exception as error:
