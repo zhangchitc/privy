@@ -72,13 +72,6 @@ def create_order(
     if order_quantity is None and order_amount is None:
         raise ValueError("Either orderQuantity or orderAmount must be provided")
     
-    # Validate MARKET/BID/ASK order requirements
-    if order_type_upper in ["MARKET", "BID", "ASK"]:
-        if side.upper() == "SELL" and order_amount is not None:
-            raise ValueError("orderAmount is not supported for SELL orders with MARKET/BID/ASK order types")
-        if side.upper() == "BUY" and order_quantity is not None:
-            raise ValueError("orderQuantity is not supported for BUY orders with MARKET/BID/ASK order types")
-    
     print("\nPreparing order creation...")
     print(f"   Wallet ID: {wallet_id}")
     print(f"   Wallet Address: {wallet_address}")
